@@ -119,39 +119,9 @@ class CeskaTelevizeIE(InfoExtractor):
                         type_ = 'bonus'
             if not idec:
                 raise ExtractorError('Failed to find IDEC id')
-            iframe_hash = self._download_webpage(
-                'https://www.ceskatelevize.cz/v-api/iframe-hash/',
-                playlist_id, note='Getting IFRAME hash')
-            query = {'hash': iframe_hash, 'origin': 'iVysilani', 'autoStart': 'true', type_: idec, }
-            webpage = self._download_webpage(
-                'https://www.ceskatelevize.cz/ivysilani/embed/iFramePlayer.php',
-                playlist_id, note='Downloading player', query=query)
 
-        NOT_AVAILABLE_STRING = 'This content is not available at your territory due to limited copyright.'
-        if '%s</p>' % NOT_AVAILABLE_STRING in webpage:
-            self.raise_geo_restricted(NOT_AVAILABLE_STRING)
-        if any(not_found in webpage for not_found in ('Neplatný parametr pro videopřehrávač', 'IDEC nebyl nalezen', )):
-            raise ExtractorError('no video with IDEC available', video_id=idec, expected=True)
-
-        type_ = None
-        episode_id = None
-
-        playlist = self._parse_json(
-            self._search_regex(
-                r'getPlaylistUrl\(\[({.+?})\]', webpage, 'playlist',
-                default='{}'), playlist_id)
-        if playlist:
-            type_ = playlist.get('type')
-            episode_id = playlist.get('id')
-
-        if not type_:
-            type_ = self._html_search_regex(
-                r'getPlaylistUrl\(\[\{"type":"(.+?)","id":".+?"\}\],',
-                webpage, 'type')
-        if not episode_id:
-            episode_id = self._html_search_regex(
-                r'getPlaylistUrl\(\[\{"type":".+?","id":"(.+?)"\}\],',
-                webpage, 'episode_id')
+        type_ = "episode"
+        episode_id = idec
 
         data = {
             'playlist[0][type]': type_,
