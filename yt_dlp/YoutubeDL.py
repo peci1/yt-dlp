@@ -2367,10 +2367,29 @@ class YoutubeDL:
 
             elif selector.type == MERGE:  # +
                 selector_1, selector_2 = map(_build_selector_function, selector.selector)
-
                 def selector_function(ctx):
-                    for pair in itertools.product(selector_1(ctx), selector_2(ctx)):
-                        yield _merge(pair)
+                    audio_lang_to_format = {}
+                    for itm in ctx['formats']:
+                        ac = itm.get("acodec")
+                        if not ac or ac == 'none':
+                            continue
+                        lang = itm.get("language")
+                        if not lang or lang == 'none':
+                            continue
+                        audio_lang_to_format.setdefault(lang, []).append(itm)
+
+                    if len(audio_lang_to_format) < 2:
+                        for pair in itertools.product(selector_1(ctx), selector_2(ctx)):
+                            yield _merge(pair)
+                        return
+
+                    res = next(selector_1(ctx))
+                    from copy import deepcopy
+                    ctx_copy = deepcopy(ctx)
+                    for lang in audio_lang_to_format:
+                        ctx_copy["formats"] = audio_lang_to_format[lang]
+                        res = _merge((res, next(selector_2(ctx_copy))))
+                    yield res
 
             elif selector.type == SINGLE:  # atom
                 format_spec = selector.selector or 'best'
